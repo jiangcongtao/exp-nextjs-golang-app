@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"time"
 )
 
 // More verbose syntax to include all files, like . _ prefixed hidden files
@@ -43,6 +44,14 @@ func (h *hybridFS) Open(name string) (fs.File, error) {
 	}
 	fmt.Println("Open file from file system: ", path)
 	return file, err
+}
+
+// cacheMiddleware sets the Cache-Control header for static files.
+func cacheMiddleware(next http.Handler, maxAge time.Duration) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", "public, max-age="+maxAge.String())
+		next.ServeHTTP(w, r)
+	})
 }
 
 func main() {
@@ -78,8 +87,12 @@ func main() {
 	// 	log.Fatal(err)
 	// }
 
+	// Set the duration for which you want the cache to be valid
+	// cacheDuration := 5 * time.Minute
+	cacheDuration := time.Duration(0)
+
 	http.HandleFunc("/process", processHandler)
-	http.Handle("/", http.FileServer(http.FS(hfs)))
+	http.Handle("/", cacheMiddleware(http.FileServer(http.FS(hfs)), cacheDuration))
 	http.ListenAndServe(":8080", nil)
 }
 
