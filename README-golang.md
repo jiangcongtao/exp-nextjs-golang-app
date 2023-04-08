@@ -31,3 +31,9 @@ go build main.go
 
 open `http://localhost:8080` in browser
 
+## Export static files
+
+```shell
+./main --export `pwd`/t
+```
+
