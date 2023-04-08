@@ -8,11 +8,17 @@ import (
 	"net/http"
 )
 
-//go:embed out/*
-//go:embed out/_next/static/css/*
-//go:embed out/_next/static/chunks/*
-//go:embed out/_next/static/chunks/pages/*
-//go:embed out/_next/static/98eRoObwE0k4A3bguCFax/*
+// More verbose syntax to include all files, like . _ prefixed hidden files
+// //go:embed out/*
+// //go:embed out/_next/static/css/*
+// //go:embed out/_next/static/chunks/*
+// //go:embed out/_next/static/chunks/pages/*
+// //go:embed out/_next/static/98eRoObwE0k4A3bguCFax/*
+// var content embed.FS
+
+// More succinct synatx to include files, like . _ prefixed hidden files
+
+//go:embed all:out
 var content embed.FS
 
 func main() {
