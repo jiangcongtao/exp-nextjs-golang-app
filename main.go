@@ -8,7 +8,6 @@ import (
 	"io"
 	"io/fs"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -22,7 +21,7 @@ import (
 // //go:embed out/_next/static/98eRoObwE0k4A3bguCFax/*
 // var embeddedFS embed.FS
 
-// More succinct syntax to include files, like . _ prefixed hidden files
+// More succinct synatx to include files, like . _ prefixed hidden files
 
 //go:embed all:out
 var embeddedFS embed.FS
@@ -32,19 +31,23 @@ type hybridFS struct {
 	root    string
 }
 
+const embedRootFolder = "out"
+
 func (h *hybridFS) Open(name string) (fs.File, error) {
 	path := filepath.Join(h.root, name)
 	file, err := os.Open(path)
 
 	if errors.Is(err, os.ErrNotExist) {
-		return h.embedFS.Open(filepath.Join("static", name))
+		fmt.Println("Open embedded file: ", name)
+		return h.embedFS.Open(filepath.Join(embedRootFolder, name))
 	}
-
+	fmt.Println("Open file from file system: ", path)
 	return file, err
 }
 
 func main() {
 	exportFlag := flag.Bool("export", false, "Export embedded files to the specified folder and exit")
+	physicalFSRootFlag := flag.String("physical-root", "external", "Path to the folder where files should be searched before embedded files")
 	flag.Parse()
 
 	if *exportFlag {
@@ -64,13 +67,19 @@ func main() {
 		os.Exit(0)
 	}
 
-	distFS, err := fs.Sub(embeddedFS, "out")
-	if err != nil {
-		log.Fatal(err)
+	physicalFSRoot := *physicalFSRootFlag
+	hfs := &hybridFS{
+		embedFS: embeddedFS,
+		root:    physicalFSRoot,
 	}
 
+	// distFS, err := fs.Sub(embeddedFS, "out")
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+
 	http.HandleFunc("/process", processHandler)
-	http.Handle("/", http.FileServer(http.FS(distFS)))
+	http.Handle("/", http.FileServer(http.FS(hfs)))
 	http.ListenAndServe(":8080", nil)
 }
 
@@ -97,12 +106,12 @@ func exportEmbeddedFiles(exportDir string) error {
 		return err
 	}
 
-	return fs.WalkDir(embeddedFS, "out", func(path string, d fs.DirEntry, err error) error {
+	return fs.WalkDir(embeddedFS, embedRootFolder, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
 
-		relPath, err := filepath.Rel("out", path)
+		relPath, err := filepath.Rel(embedRootFolder, path)
 		if err != nil {
 			return err
 		}
