@@ -37,3 +37,9 @@ open `http://localhost:8080` in browser
 ./main --export `pwd`/t
 ```
 
+## Setup overlay folder
+
+```shell
+./main --physical-root `pwd`/t
+```
+
